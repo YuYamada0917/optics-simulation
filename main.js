@@ -78,13 +78,13 @@ function updateSourceList() {
             </div>
             <button onclick="removeSource(${index})">削除</button>
             <button onclick="activateRuler(${index})">距離測定</button>
+            <button onclick="restartWave(${index})">波を再発生</button>
         `;
         const wavePicker = createWavePicker(source, index);
         sourceDiv.insertBefore(wavePicker, sourceDiv.lastElementChild);
         sourceList.appendChild(sourceDiv);
         updateWaveInfo(index);
 
-        // 数値入力のイベントリスナーを追加
         document.getElementById(`wavelength-${index}`).addEventListener('change', (e) => {
             const wavelength = Number(e.target.value);
             simulation.updateSource(index, wavelength, source.phase);
@@ -111,6 +111,10 @@ function activateRuler(index) {
     simulation.canvas.style.cursor = 'crosshair';
 }
 
+function restartWave(index) {
+    simulation.restartWave(index);
+}
+
 simulation.canvas.addEventListener('click', (event) => {
     const rect = simulation.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -128,21 +132,18 @@ simulation.canvas.addEventListener('click', (event) => {
     }
 });
 
-simulation.canvas.addEventListener('mousemove', (event) => {
-    if (isRulerMode) {
-        const rect = simulation.canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        simulation.setRuler(selectedSourceIndex, x, y);
-    }
-});
-
 clearButton.addEventListener('click', () => {
     simulation.clearSources();
     simulation.clearRuler();
     updateSourceCount();
     updateSourceList();
 });
+
+toggleSimulationButton.addEventListener('click', () => {
+    simulation.toggleSimulation();
+    toggleSimulationButton.textContent = simulation.isRunning ? '時間停止' : '時間再開';
+});
+
 
 function resizeCanvas() {
     const canvas = document.getElementById('waveCanvas');
