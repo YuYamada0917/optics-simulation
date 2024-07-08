@@ -144,5 +144,24 @@ clearButton.addEventListener('click', () => {
     updateSourceList();
 });
 
+function resizeCanvas() {
+    const canvas = document.getElementById('waveCanvas');
+    const container = document.querySelector('.container');
+    const containerWidth = container.clientWidth;
+    const aspectRatio = 3 / 4; // 4:3のアスペクト比を維持
+    
+    canvas.width = Math.min(containerWidth - 40, 800); // 最大幅800px、コンテナの余白を考慮
+    canvas.height = canvas.width * aspectRatio;
+    
+    // シミュレーションのサイズを更新
+    simulation.width = canvas.width;
+    simulation.height = canvas.height;
+}
+
+// ウィンドウのリサイズイベントにresizeCanvas関数を追加
+window.addEventListener('resize', resizeCanvas);
+
+// 初期化時にもresizeCanvasを呼び出す
+resizeCanvas();
 simulation.animate();
 updateSourceList();

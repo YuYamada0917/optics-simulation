@@ -1,37 +1,39 @@
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
-    background-color: #f0f0f0;
+    padding: 0;
     font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
 }
 
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    max-width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 canvas {
+    width: 100%;
+    max-width: 800px;
+    height: auto;
     border: 1px solid #000;
     cursor: crosshair;
+    display: block;
+    margin: 0 auto;
 }
 
 #controls {
     margin-top: 10px;
+    text-align: center;
 }
 
 button {
     margin: 0 5px;
+    padding: 5px 10px;
+    font-size: 14px;
 }
 
 #sourceList {
-    margin-top: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-    width: 100%;
+    margin-top: 20px;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -43,10 +45,13 @@ button {
     border: 1px solid #ccc;
     border-radius: 5px;
     text-align: center;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
 }
 
 .wave-picker {
-    width: 200px;
+    width: 100%;
     height: 200px;
     background: linear-gradient(to right, blue, red);
     position: relative;
@@ -76,30 +81,46 @@ button {
 
 .input-group {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 10px;
 }
 
 .input-group label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin: 5px 0;
 }
 
 .input-group input {
-    width: 60px;
+    width: 80%;
+    max-width: 200px;
     margin-top: 5px;
 }
 
-.source-control button {
-    margin: 5px;
-    padding: 5px 10px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    cursor: pointer;
+#instructions {
+    margin-top: 20px;
+    text-align: center;
 }
 
-.source-control button:hover {
-    background-color: #e0e0e0;
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+
+    button {
+        font-size: 12px;
+        padding: 3px 6px;
+    }
+
+    .source-control {
+        margin: 5px;
+        padding: 5px;
+    }
+
+    .wave-picker {
+        height: 150px;
+    }
+
+    #instructions {
+        font-size: 14px;
+    }
 }
