@@ -8,6 +8,8 @@ class WaveSimulation {
         this.time = 0;
         this.waveSources = [];
         this.ruler = null;
+        this.maxAmplitude = 1;
+        this.decayFactor = 0.005; // 減衰係数
     }
 
     addSource(x, y, wavelength = 20, phase = 0) {
@@ -46,17 +48,24 @@ class WaveSimulation {
         this.ruler = null;
     }
 
+    calculateWave(x, y, source) {
+        const dx = x - source.x;
+        const dy = y - source.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const phase = (distance - this.time * this.speed) / source.wavelength * 2 * Math.PI + source.phase;
+        const amplitude = Math.exp(-this.decayFactor * distance);
+        const waveWidth = Math.max(0.1, 1 - this.decayFactor * distance);
+        
+        const distFromPeak = Math.abs((phase % (2 * Math.PI)) - Math.PI) / Math.PI;
+        const intensity = distFromPeak < waveWidth ? 1 - distFromPeak / waveWidth : 0;
+        
+        return intensity * amplitude;
+    }
+
     calculateIntensity(x, y) {
-        let intensity = 0;
-        this.waveSources.forEach(source => {
-            const dx = x - source.x;
-            const dy = y - source.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const amplitude = 1 / (distance + 1);
-            // 振幅を2倍に強調
-            intensity += 2 * amplitude * Math.cos((distance - this.time * this.speed) / source.wavelength * 2 * Math.PI + source.phase);
-        });
-        return intensity;
+        return this.waveSources.reduce((total, source) => {
+            return total + this.calculateWave(x, y, source);
+        }, 0);
     }
 
     draw() {
@@ -72,12 +81,14 @@ class WaveSimulation {
             for (let y = 0; y < this.height; y++) {
                 const intensity = this.calculateIntensity(x, y);
                 const index = (y * this.width + x) * 4;
-                // コントラストを増加させ、振幅を強調
-                const brightness = Math.floor(((Math.tanh(intensity) + 1) / 2) * 255);
-                imageData.data[index] = brightness;
-                imageData.data[index + 1] = brightness;
-                imageData.data[index + 2] = brightness;
-                imageData.data[index + 3] = 255;
+                
+                // 振幅を色に変換
+                const colorIntensity = Math.floor(intensity * 255);
+                
+                imageData.data[index] = colorIntensity;     // Red
+                imageData.data[index + 1] = colorIntensity; // Green
+                imageData.data[index + 2] = colorIntensity; // Blue
+                imageData.data[index + 3] = 255;            // Alpha
             }
         }
         this.ctx.putImageData(imageData, 0, 0);
