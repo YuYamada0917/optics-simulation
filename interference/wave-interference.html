@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>波動シミュレーション（ものさし機能付き）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <canvas id="waveCanvas" width="800" height="600"></canvas>
+        <div id="controls">
+            <button id="clearButton">全てクリア</button>
+            <span>波源: <span id="sourceCount">0</span></span>
+        </div>
+        <div id="sourceList"></div>
+        <div id="instructions">
+            <p>キャンバスをクリックして波源を追加します。</p>
+            <p>「距離測定」ボタンをクリックし、キャンバス上の任意の点をクリックして距離を測定します。</p>
+        </div>
+    </div>
+    <script src="WaveSimulation.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
