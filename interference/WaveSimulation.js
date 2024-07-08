@@ -53,7 +53,8 @@ class WaveSimulation {
             const dy = y - source.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             const amplitude = 1 / (distance + 1);
-            intensity += amplitude * Math.cos((distance - this.time * this.speed) / source.wavelength * 2 * Math.PI + source.phase);
+            // 振幅を2倍に強調
+            intensity += 2 * amplitude * Math.cos((distance - this.time * this.speed) / source.wavelength * 2 * Math.PI + source.phase);
         });
         return intensity;
     }
@@ -71,7 +72,8 @@ class WaveSimulation {
             for (let y = 0; y < this.height; y++) {
                 const intensity = this.calculateIntensity(x, y);
                 const index = (y * this.width + x) * 4;
-                const brightness = Math.floor(((intensity + 1) / 2) * 255);
+                // コントラストを増加させ、振幅を強調
+                const brightness = Math.floor(((Math.tanh(intensity) + 1) / 2) * 255);
                 imageData.data[index] = brightness;
                 imageData.data[index + 1] = brightness;
                 imageData.data[index + 2] = brightness;
