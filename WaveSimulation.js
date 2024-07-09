@@ -8,8 +8,10 @@ class WaveSimulation {
         this.waveSources = [];
         this.ruler = null;
         this.maxAmplitude = 1;
-        this.decayFactor = 0.005;
+        this.decayFactor = 0.01;
         this.isRunning = true;
+        this.showInterference = false;
+        this.tempRulerEnd = null;
     }
 
     addSource(x, y, wavelength = 20, phase = 0) {
@@ -25,31 +27,32 @@ class WaveSimulation {
         this.waveSources[index].phase = Number(phase);
     }
 
-    restartWave(index) {
-        this.waveSources[index].time = 0;
-    }
-
     clearSources() {
         this.waveSources = [];
     }
 
-    setRuler(sourceIndex, endX, endY) {
-        if (sourceIndex >= 0 && sourceIndex < this.waveSources.length) {
-            const source = this.waveSources[sourceIndex];
-            this.ruler = {
-                sourceIndex: sourceIndex,
-                startX: source.x,
-                startY: source.y,
-                endX: endX,
-                endY: endY
-            };
-        } else {
-            this.ruler = null;
+    setRulerStart(x, y) {
+        this.ruler = { startX: x, startY: y, endX: x, endY: y };
+        this.tempRulerEnd = { x, y };
+    }
+
+    updateRulerEnd(x, y) {
+        if (this.ruler) {
+            this.tempRulerEnd = { x, y };
+        }
+    }
+
+    setRulerEnd(x, y) {
+        if (this.ruler) {
+            this.ruler.endX = x;
+            this.ruler.endY = y;
+            this.tempRulerEnd = null;
         }
     }
 
     clearRuler() {
         this.ruler = null;
+        this.tempRulerEnd = null;
     }
 
     calculateWave(x, y, source) {
@@ -58,18 +61,19 @@ class WaveSimulation {
         const distance = Math.sqrt(dx * dx + dy * dy);
         const phase = (distance - source.time * this.speed) / source.wavelength * 2 * Math.PI + source.phase;
         const amplitude = Math.exp(-this.decayFactor * distance);
-        const waveWidth = Math.max(0.1, 1 - this.decayFactor * distance);
-        
-        const distFromPeak = Math.abs((phase % (2 * Math.PI)) - Math.PI) / Math.PI;
-        const intensity = distFromPeak < waveWidth ? 1 - distFromPeak / waveWidth : 0;
-        
-        return intensity * amplitude;
+        return amplitude * Math.cos(phase);
     }
 
     calculateIntensity(x, y) {
-        return this.waveSources.reduce((total, source) => {
-            return total + this.calculateWave(x, y, source);
-        }, 0);
+        if (this.showInterference) {
+            return this.waveSources.reduce((total, source) => {
+                return total + this.calculateWave(x, y, source);
+            }, 0);
+        } else {
+            return this.waveSources.reduce((max, source) => {
+                return Math.max(max, Math.abs(this.calculateWave(x, y, source)));
+            }, 0);
+        }
     }
 
     draw() {
@@ -84,11 +88,26 @@ class WaveSimulation {
                 const intensity = this.calculateIntensity(x, y);
                 const index = (y * this.width + x) * 4;
                 
-                const colorIntensity = Math.floor(intensity * 255);
-                
-                imageData.data[index] = colorIntensity;
-                imageData.data[index + 1] = colorIntensity;
-                imageData.data[index + 2] = colorIntensity;
+                if (this.showInterference) {
+                    const colorIntensity = Math.floor(Math.abs(intensity) * 255);
+                    if (intensity > 0) {
+                        // 正の干渉は白の実線
+                        imageData.data[index] = colorIntensity;
+                        imageData.data[index + 1] = colorIntensity;
+                        imageData.data[index + 2] = colorIntensity;
+                    } else {
+                        // 負の干渉は白の点線（強度を半分にして表現）
+                        const dotted = (x + y) % 2 === 0;
+                        imageData.data[index] = dotted ? colorIntensity / 2 : 0;
+                        imageData.data[index + 1] = dotted ? colorIntensity / 2 : 0;
+                        imageData.data[index + 2] = dotted ? colorIntensity / 2 : 0;
+                    }
+                } else {
+                    const colorIntensity = Math.floor(intensity * 255);
+                    imageData.data[index] = colorIntensity;
+                    imageData.data[index + 1] = colorIntensity;
+                    imageData.data[index + 2] = colorIntensity;
+                }
                 imageData.data[index + 3] = 255;
             }
         }
@@ -101,22 +120,7 @@ class WaveSimulation {
             this.ctx.fill();
         });
 
-        if (this.ruler) {
-            const source = this.waveSources[this.ruler.sourceIndex];
-            this.ctx.beginPath();
-            this.ctx.moveTo(source.x, source.y);
-            this.ctx.lineTo(this.ruler.endX, this.ruler.endY);
-            this.ctx.strokeStyle = 'yellow';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-
-            const dx = this.ruler.endX - source.x;
-            const dy = this.ruler.endY - source.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            this.ctx.fillStyle = 'yellow';
-            this.ctx.font = '14px Arial';
-            this.ctx.fillText(`${distance.toFixed(1)} px`, (source.x + this.ruler.endX) / 2, (source.y + this.ruler.endY) / 2);
-        }
+        this.drawRuler();
 
         if (this.isRunning) {
             this.waveSources.forEach(source => {
@@ -125,6 +129,27 @@ class WaveSimulation {
         }
     }
 
+    drawRuler() {
+        if (this.ruler) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.ruler.startX, this.ruler.startY);
+            const endX = this.tempRulerEnd ? this.tempRulerEnd.x : this.ruler.endX;
+            const endY = this.tempRulerEnd ? this.tempRulerEnd.y : this.ruler.endY;
+            this.ctx.lineTo(endX, endY);
+            this.ctx.strokeStyle = 'yellow';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            const dx = endX - this.ruler.startX;
+            const dy = endY - this.ruler.startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            this.ctx.fillStyle = 'yellow';
+            this.ctx.font = '14px Arial';
+            this.ctx.fillText(`${distance.toFixed(1)} px`, (this.ruler.startX + endX) / 2, (this.ruler.startY + endY) / 2);
+        }
+    }
+
+
     animate() {
         this.draw();
         requestAnimationFrame(() => this.animate());
@@ -132,5 +157,9 @@ class WaveSimulation {
 
     toggleSimulation() {
         this.isRunning = !this.isRunning;
+    }
+
+    toggleInterferenceMode() {
+        this.showInterference = !this.showInterference;
     }
 }

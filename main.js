@@ -2,9 +2,11 @@ const simulation = new WaveSimulation('waveCanvas');
 const clearButton = document.getElementById('clearButton');
 const sourceCountElement = document.getElementById('sourceCount');
 const sourceList = document.getElementById('sourceList');
+const toggleSimulationButton = document.getElementById('toggleSimulationButton');
+const toggleModeButton = document.getElementById('toggleModeButton');
 
 let isRulerMode = false;
-let selectedSourceIndex = -1;
+let isSettingRulerEnd = false;
 
 function updateSourceCount() {
     sourceCountElement.textContent = simulation.waveSources.length;
@@ -78,7 +80,6 @@ function updateSourceList() {
             </div>
             <button onclick="removeSource(${index})">削除</button>
             <button onclick="activateRuler(${index})">距離測定</button>
-            <button onclick="restartWave(${index})">波を再発生</button>
         `;
         const wavePicker = createWavePicker(source, index);
         sourceDiv.insertBefore(wavePicker, sourceDiv.lastElementChild);
@@ -105,14 +106,9 @@ function removeSource(index) {
     updateSourceList();
 }
 
-function activateRuler(index) {
+function activateRuler() {
     isRulerMode = true;
-    selectedSourceIndex = index;
     simulation.canvas.style.cursor = 'crosshair';
-}
-
-function restartWave(index) {
-    simulation.restartWave(index);
 }
 
 simulation.canvas.addEventListener('click', (event) => {
@@ -121,10 +117,15 @@ simulation.canvas.addEventListener('click', (event) => {
     const y = event.clientY - rect.top;
 
     if (isRulerMode) {
-        simulation.setRuler(selectedSourceIndex, x, y);
-        isRulerMode = false;
-        selectedSourceIndex = -1;
-        simulation.canvas.style.cursor = 'default';
+        if (!isSettingRulerEnd) {
+            simulation.setRulerStart(x, y);
+            isSettingRulerEnd = true;
+        } else {
+            simulation.setRulerEnd(x, y);
+            isRulerMode = false;
+            isSettingRulerEnd = false;
+            simulation.canvas.style.cursor = 'default';
+        }
     } else {
         simulation.addSource(x, y);
         updateSourceCount();
@@ -132,9 +133,20 @@ simulation.canvas.addEventListener('click', (event) => {
     }
 });
 
+simulation.canvas.addEventListener('mousemove', (event) => {
+    if (isSettingRulerEnd) {
+        const rect = simulation.canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        simulation.updateRulerEnd(x, y);
+    }
+});
+
 clearButton.addEventListener('click', () => {
     simulation.clearSources();
     simulation.clearRuler();
+    isRulerMode = false;
+    isSettingRulerEnd = false;
     updateSourceCount();
     updateSourceList();
 });
@@ -144,25 +156,26 @@ toggleSimulationButton.addEventListener('click', () => {
     toggleSimulationButton.textContent = simulation.isRunning ? '時間停止' : '時間再開';
 });
 
+toggleModeButton.addEventListener('click', () => {
+    simulation.toggleInterferenceMode();
+    toggleModeButton.textContent = simulation.showInterference ? '通常モード' : '干渉モード';
+});
 
 function resizeCanvas() {
     const canvas = document.getElementById('waveCanvas');
     const container = document.querySelector('.container');
     const containerWidth = container.clientWidth;
-    const aspectRatio = 3 / 4; // 4:3のアスペクト比を維持
+    const aspectRatio = 3 / 4;
     
-    canvas.width = Math.min(containerWidth - 40, 800); // 最大幅800px、コンテナの余白を考慮
+    canvas.width = Math.min(containerWidth - 40, 800);
     canvas.height = canvas.width * aspectRatio;
     
-    // シミュレーションのサイズを更新
     simulation.width = canvas.width;
     simulation.height = canvas.height;
 }
 
-// ウィンドウのリサイズイベントにresizeCanvas関数を追加
 window.addEventListener('resize', resizeCanvas);
 
-// 初期化時にもresizeCanvasを呼び出す
 resizeCanvas();
 simulation.animate();
 updateSourceList();
